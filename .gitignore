@@ -1,3 +1,15 @@
+# Dependencies
+/node_modules/
+
+# Build output
+/dist/
+/build/
+/dist-ssr/
+/out/
+
+# Production
+*.local
+
 # Logs
 logs
 *.log
@@ -7,18 +19,41 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# dotenv environment files
+.env
+.env.*.local
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
-.idea
+.idea/
 .DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# Testing
+/coverage/
+/jest-cache/
+/jest-config.json
+/.nyc_output/
+
+# Storybook
+/storybook-static/
+
+# Misc
+*.tgz
+*.tar.gz
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
