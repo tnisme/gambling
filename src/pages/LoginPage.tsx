@@ -2,18 +2,53 @@ import styled from 'styled-components';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaCrown, FaUser, FaLock } from 'react-icons/fa';
+import { login } from '../services/authService';
+import { useAuth } from '../contexts/AuthContext';
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const { setUser } = useAuth();
   const [formData, setFormData] = useState({
     username: '',
     password: '',
     rememberMe: false
   });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Login attempt:', formData);
+    setError('');
+
+    if (!formData.username || !formData.password) {
+      setError('Please enter both username and password');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await login({
+        username: formData.username,
+        password: formData.password
+      });
+
+      // Update auth context with user data
+      setUser(response.user);
+
+      // Save remember me preference
+      if (formData.rememberMe) {
+        localStorage.setItem('rememberMe', formData.username);
+      } else {
+        localStorage.removeItem('rememberMe');
+      }
+
+      // Redirect to home page
+      navigate('/');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -26,53 +61,64 @@ const LoginPage = () => {
             <BrandName>Vegas Royal</BrandName>
           </LogoSection>
 
-        <LoginForm onSubmit={handleSubmit}>
-          <SubText>Please login to your account</SubText>
+          <LoginForm onSubmit={handleSubmit}>
+            <SubText>Please login to your account</SubText>
 
-          <InputGroup>
-            <InputIcon>
-              <FaUser />
-            </InputIcon>
-            <Input
-              type="text"
-              placeholder="Username"
-              value={formData.username}
-              onChange={(e) => setFormData({...formData, username: e.target.value})}
-            />
-          </InputGroup>
+            {error && <ErrorMessage>{error}</ErrorMessage>}
 
-          <InputGroup>
-            <InputIcon>
-              <FaLock />
-            </InputIcon>
-            <Input
-              type="password"
-              placeholder="Password"
-              value={formData.password}
-              onChange={(e) => setFormData({...formData, password: e.target.value})}
-            />
-          </InputGroup>
-
-          <FormOptions>
-            <CheckboxGroup>
-              <Checkbox
-                type="checkbox"
-                id="rememberMe"
-                checked={formData.rememberMe}
-                onChange={(e) => setFormData({...formData, rememberMe: e.target.checked})}
+            <InputGroup>
+              <InputIcon>
+                <FaUser />
+              </InputIcon>
+              <Input
+                type="text"
+                placeholder="Username"
+                value={formData.username}
+                onChange={(e) => setFormData({...formData, username: e.target.value})}
+                disabled={loading}
+                required
               />
-              <CheckboxLabel htmlFor="rememberMe">Remember me</CheckboxLabel>
-            </CheckboxGroup>
-            <ForgotPassword href="#">Forgot Password?</ForgotPassword>
-          </FormOptions>
+            </InputGroup>
 
-          <LoginButton type="submit">Login</LoginButton>
+            <InputGroup>
+              <InputIcon>
+                <FaLock />
+              </InputIcon>
+              <Input
+                type="password"
+                placeholder="Password"
+                value={formData.password}
+                onChange={(e) => setFormData({...formData, password: e.target.value})}
+                disabled={loading}
+                required
+              />
+            </InputGroup>
 
-          <SignUpPrompt>
-            Don't have an account? <SignUpLink onClick={() => navigate('/signup')}>Sign Up</SignUpLink>
-          </SignUpPrompt>
-        </LoginForm>
-      </LoginContainer>
+            <FormOptions>
+              <CheckboxGroup>
+                <Checkbox
+                  type="checkbox"
+                  id="rememberMe"
+                  checked={formData.rememberMe}
+                  onChange={(e) => setFormData({...formData, rememberMe: e.target.checked})}
+                  disabled={loading}
+                />
+                <CheckboxLabel htmlFor="rememberMe">Remember me</CheckboxLabel>
+              </CheckboxGroup>
+              <ForgotPassword onClick={() => navigate('/forgot-password')}>
+                Forgot Password?
+              </ForgotPassword>
+            </FormOptions>
+
+            <LoginButton type="submit" disabled={loading}>
+              {loading ? 'Logging in...' : 'Login'}
+            </LoginButton>
+
+            <SignUpPrompt>
+              Don't have an account? <SignUpLink onClick={() => navigate('/signup')}>Sign Up</SignUpLink>
+            </SignUpPrompt>
+          </LoginForm>
+        </LoginContainer>
         <BackButton onClick={() => navigate('/')}>Back to Home</BackButton>
       </ContentWrapper>
     </PageContainer>
@@ -149,13 +195,6 @@ const LoginForm = styled.form`
   gap: 1.5rem;
 `;
 
-const WelcomeText = styled.h2`
-  color: ${props => props.theme.colors.white};
-  font-size: 2rem;
-  text-align: center;
-  margin-bottom: 0.5rem;
-`;
-
 const SubText = styled.p`
   color: ${props => props.theme.colors.white};
   opacity: 0.8;
@@ -222,10 +261,10 @@ const CheckboxLabel = styled.label`
   cursor: pointer;
 `;
 
-const ForgotPassword = styled.a`
+const ForgotPassword = styled.span`
   color: ${props => props.theme.colors.secondary};
   font-size: 0.9rem;
-  text-decoration: none;
+  cursor: pointer;
   transition: opacity 0.3s ease;
 
   &:hover {
@@ -284,6 +323,17 @@ const BackButton = styled.button`
     background: ${props => props.theme.colors.secondary};
     color: ${props => props.theme.colors.background};
   }
+`;
+
+const ErrorMessage = styled.div`
+  color: #ff4d4f;
+  background: rgba(255, 77, 79, 0.1);
+  border: 1px solid rgba(255, 77, 79, 0.2);
+  padding: 0.75rem;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
 `;
 
 export default LoginPage;

@@ -1,30 +1,60 @@
 import styled from 'styled-components';
-import { FaCrown } from 'react-icons/fa';
+import { FaCrown, FaUser, FaWallet, FaSignOutAlt } from 'react-icons/fa';
 import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 
 const Header = () => {
   const navigate = useNavigate();
+  const { user, logout, isAuthenticated } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   return (
     <HeaderContainer>
       <HeaderContent>
-      <LogoSection>
+        <LogoSection>
           <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <FaCrown size={42} color="#FFD700" />
             <LogoText>Vegas Royal</LogoText>
           </Link>
-      </LogoSection>
-      
-      <Navigation>
+        </LogoSection>
+        
+        <Navigation>
           <NavLink to="#">Games</NavLink>
           <NavLink to="#">Banking</NavLink>
           <NavLink to="#">Support</NavLink>
-      </Navigation>
-      
-      <AuthSection>
-          <LoginButton onClick={() => navigate('/login')}>Log In</LoginButton>
-          <SignUpButton onClick={() => navigate('/signup')}>Sign Up</SignUpButton>
-      </AuthSection>
+        </Navigation>
+        
+        {isAuthenticated && user ? (
+          <UserSection>
+            <UserInfo>
+              <UserIcon>
+                <FaUser size={16} />
+              </UserIcon>
+              <Username>{user.username}</Username>
+            </UserInfo>
+
+            <BalanceInfo>
+              <WalletIcon>
+                <FaWallet size={16} />
+              </WalletIcon>
+              <Balance>$1,000.00</Balance>
+            </BalanceInfo>
+
+            <LogoutButton onClick={handleLogout}>
+              <FaSignOutAlt size={16} />
+              <span>Logout</span>
+            </LogoutButton>
+          </UserSection>
+        ) : (
+          <AuthSection>
+            <LoginButton onClick={() => navigate('/login')}>Log In</LoginButton>
+            <SignUpButton onClick={() => navigate('/signup')}>Sign Up</SignUpButton>
+          </AuthSection>
+        )}
       </HeaderContent>
     </HeaderContainer>
   );
@@ -108,6 +138,66 @@ const SignUpButton = styled(Button)`
   
   &:hover {
     background: ${props => props.theme.colors.darkRed};
+  }
+`;
+
+const UserSection = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+`;
+
+const UserInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: ${props => props.theme.colors.white};
+`;
+
+const UserIcon = styled.div`
+  color: ${props => props.theme.colors.secondary};
+`;
+
+const Username = styled.span`
+  font-weight: 500;
+  font-size: 1.1rem;
+`;
+
+const BalanceInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 215, 0, 0.1);
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+`;
+
+const WalletIcon = styled.div`
+  color: ${props => props.theme.colors.secondary};
+`;
+
+const Balance = styled.span`
+  font-weight: 600;
+  color: ${props => props.theme.colors.secondary};
+  font-size: 1.1rem;
+`;
+
+const LogoutButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  border: 2px solid ${props => props.theme.colors.primary};
+  color: ${props => props.theme.colors.white};
+  padding: 0.8rem 1.5rem;
+  border-radius: 30px;
+  font-size: 1.1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: ${props => props.theme.colors.primary};
   }
 `;
 

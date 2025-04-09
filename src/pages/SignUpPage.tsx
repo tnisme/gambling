@@ -2,9 +2,12 @@ import styled from 'styled-components';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaCrown, FaUser, FaLock, FaEnvelope } from 'react-icons/fa';
+import { register } from '../services/authService';
+import { useAuth } from '../contexts/AuthContext';
 
 const SignUpPage = () => {
   const navigate = useNavigate();
+  const { setUser } = useAuth();
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -12,10 +15,47 @@ const SignUpPage = () => {
     confirmPassword: '',
     agreeToTerms: false
   });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Sign up attempt:', formData);
+    setError('');
+    
+    // Validation
+    if (!formData.username || !formData.email || !formData.password || !formData.confirmPassword) {
+      setError('All fields are required');
+      return;
+    }
+    
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    if (!formData.agreeToTerms) {
+      setError('You must agree to the Terms & Conditions');
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      const response = await register({
+        username: formData.username,
+        email: formData.email,
+        password: formData.password
+      });
+      
+      // Update auth context
+      setUser(response.user);
+      
+      // Redirect to homepage on success
+      navigate('/');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -30,6 +70,8 @@ const SignUpPage = () => {
 
           <SignUpForm onSubmit={handleSubmit}>
             <SubText>Join Vegas Royal and start winning!</SubText>
+            
+            {error && <ErrorMessage>{error}</ErrorMessage>}
 
             <InputGroup>
               <InputIcon>
@@ -37,9 +79,12 @@ const SignUpPage = () => {
               </InputIcon>
               <Input
                 type="text"
-                placeholder="Username"
+                placeholder="Username (min 3 characters)"
                 value={formData.username}
                 onChange={(e) => setFormData({...formData, username: e.target.value})}
+                minLength={3}
+                maxLength={50}
+                required
               />
             </InputGroup>
 
@@ -52,6 +97,7 @@ const SignUpPage = () => {
                 placeholder="Email"
                 value={formData.email}
                 onChange={(e) => setFormData({...formData, email: e.target.value})}
+                required
               />
             </InputGroup>
 
@@ -61,9 +107,11 @@ const SignUpPage = () => {
               </InputIcon>
               <Input
                 type="password"
-                placeholder="Password"
+                placeholder="Password (min 8 chars, include A-Z, a-z, 0-9, @$!%*?&)"
                 value={formData.password}
                 onChange={(e) => setFormData({...formData, password: e.target.value})}
+                pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
+                required
               />
             </InputGroup>
 
@@ -76,6 +124,7 @@ const SignUpPage = () => {
                 placeholder="Confirm Password"
                 value={formData.confirmPassword}
                 onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+                required
               />
             </InputGroup>
 
@@ -85,13 +134,16 @@ const SignUpPage = () => {
                 id="agreeToTerms"
                 checked={formData.agreeToTerms}
                 onChange={(e) => setFormData({...formData, agreeToTerms: e.target.checked})}
+                required
               />
               <TermsLabel htmlFor="agreeToTerms">
                 I agree to the <TermsLink href="#">Terms & Conditions</TermsLink>
               </TermsLabel>
             </TermsGroup>
 
-            <SignUpButton type="submit">Create Account</SignUpButton>
+            <SignUpButton type="submit" disabled={loading}>
+              {loading ? 'Creating Account...' : 'Create Account'}
+            </SignUpButton>
 
             <LoginPrompt>
               Already have an account? <LoginLink onClick={() => navigate('/login')}>Log In</LoginLink>
@@ -262,6 +314,8 @@ const SignUpButton = styled.button`
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+  opacity: ${props => props.disabled ? 0.7 : 1};
+  pointer-events: ${props => props.disabled ? 'none' : 'auto'};
 
   &:hover {
     background: ${props => props.theme.colors.secondary};
@@ -302,6 +356,40 @@ const BackButton = styled.button`
   &:hover {
     background: ${props => props.theme.colors.secondary};
     color: ${props => props.theme.colors.background};
+  }
+`;
+
+const ErrorMessage = styled.div`
+  color: #ff4d4f;
+  background: rgba(255, 77, 79, 0.1);
+  border: 1px solid rgba(255, 77, 79, 0.2);
+  padding: 0.75rem;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 0.9rem;
+`;
+
+const Select = styled.select`
+  width: 100%;
+  padding: 1rem 1rem 1rem 3rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  border-radius: 30px;
+  color: ${props => props.theme.colors.white};
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  appearance: none;
+  cursor: pointer;
+
+  &:focus {
+    outline: none;
+    border-color: ${props => props.theme.colors.secondary};
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  option {
+    background: #1a1a1a;
+    color: ${props => props.theme.colors.white};
   }
 `;
 
