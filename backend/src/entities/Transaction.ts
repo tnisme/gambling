@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, OneToMany} from 'typeorm';
 import { User } from './User.js';
 import { Deposit } from './Deposit.js';
 import { Bet } from './Bet.js';
@@ -7,7 +7,8 @@ export enum TransactionType {
     DEPOSIT = 'deposit',
     WITHDRAWAL = 'withdrawal',
     BET = 'bet',
-    WIN = 'win'
+    WIN = 'win',
+    COUPON = 'coupon'
 }
 
 @Entity('transactions')
