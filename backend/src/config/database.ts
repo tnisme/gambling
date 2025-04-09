@@ -5,6 +5,8 @@ import { Game } from '../entities/Game.js';
 import { Transaction } from '../entities/Transaction.js';
 import { Deposit } from '../entities/Deposit.js';
 import { UserSession } from '../entities/UserSession.js';
+import { Coupon } from '../entities/Coupon.js';
+import { CouponRedemption } from '../entities/CouponRedemption.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -24,7 +26,9 @@ export const AppDataSource = new DataSource({
         Game,
         Transaction,
         Deposit,
-        UserSession
+        UserSession,
+        Coupon,
+        CouponRedemption
     ],
     migrations: [],
     subscribers: []

@@ -1,13 +1,14 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { getCurrentUser, logout } from '../services/authService';
 
-interface User {
+export interface User {
   id: string;
   username: string;
   email: string;
   status?: string;
   verificationStatus?: string;
   createdAt?: string;
+  balance?: number;
 }
 
 interface AuthContextType {
@@ -24,20 +25,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    // Try to get user data from localStorage on initial load
-    const userData = getCurrentUser();
-    if (userData?.user) {
-      setUser(userData.user);
+    console.log('AuthProvider initializing...');
+    const currentUser = getCurrentUser();
+    console.log('Retrieved user from storage:', currentUser);
+    
+    if (currentUser) {
+      console.log('Setting authenticated user:', currentUser.username);
+      setUser(currentUser);
       setIsAuthenticated(true);
+    } else {
+      console.log('No user found in storage');
+      setUser(null);
+      setIsAuthenticated(false);
     }
   }, []);
 
   const handleSetUser = (user: User) => {
+    console.log('Setting new user:', user.username);
     setUser(user);
     setIsAuthenticated(true);
   };
 
   const handleLogout = () => {
+    console.log('Logging out user');
     logout();
     setUser(null);
     setIsAuthenticated(false);

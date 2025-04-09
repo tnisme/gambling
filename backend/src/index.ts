@@ -11,6 +11,11 @@ import { RegisterDto } from './dto/RegisterDto.js';
 import { LoginDto } from './dto/LoginDto.js';
 import { validate } from 'class-validator';
 import { plainToClass } from 'class-transformer';
+import depositRoutes from './routes/depositRoutes.js';
+import jwt from 'jsonwebtoken';
+import { authMiddleware } from './middleware/authMiddleware.js';
+import { CouponService } from './services/CouponService.js';
+import { Transaction } from './entities/Transaction.js';
 
 // Load environment variables
 dotenv.config();
@@ -67,6 +72,89 @@ app.get('/', (req, res) => {
     res.json({ message: 'Welcome to the Gambling API' });
 });
 
+// Register routes
+app.use('/api/deposits', depositRoutes);
+
+// === Account Routes ===
+// Get transaction history (requires authentication)
+app.get('/api/account/transactions', authMiddleware, async (req: any, res) => {
+    try {
+        const userId = req.user?.id;
+        console.log('Fetching transactions for user ID:', userId);
+        
+        if (!userId) {
+            console.error('No user ID found in request');
+            return res.status(401).json({ message: 'Authentication required' });
+        }
+
+        const transactionRepository = AppDataSource.getRepository(Transaction);
+        const transactions = await transactionRepository.find({
+            where: { userId },
+            order: { createdAt: 'DESC' }
+        });
+
+        console.log('Found transactions:', transactions);
+
+        // Format transactions for frontend
+        const formattedTransactions = transactions.map(t => ({
+            id: t.id,
+            type: t.type,
+            amount: Number(t.amount), // Ensure amount is a number
+            date: t.createdAt.toISOString(), // Ensure date is in ISO format
+            status: 'completed'
+        }));
+
+        console.log('Formatted transactions:', formattedTransactions);
+        res.json(formattedTransactions);
+    } catch (error: any) {
+        console.error('Get transactions error:', error);
+        res.status(500).json({ message: 'Failed to fetch transaction history' });
+    }
+});
+
+// Apply coupon code (requires authentication)
+app.post('/api/account/apply-coupon', authMiddleware, async (req: any, res) => {
+    try {
+        const userId = req.user?.id;
+        const { couponCode } = req.body;
+
+        if (!userId) {
+            return res.status(401).json({ message: 'Authentication required' });
+        }
+        if (!couponCode || typeof couponCode !== 'string') {
+            return res.status(400).json({ message: 'Coupon code is required and must be a string' });
+        }
+
+        const couponService = new CouponService(AppDataSource.manager);
+        const result = await couponService.applyCoupon(userId, couponCode);
+
+        if (!result.success) {
+            return res.status(400).json({ message: result.message });
+        }
+
+        // Get updated user data
+        const userRepository = AppDataSource.getRepository(User);
+        const updatedUser = await userRepository.findOneBy({ id: userId });
+        
+        if (!updatedUser) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Omit sensitive data before sending back
+        const { passwordHash, ...userToSend } = updatedUser;
+        res.json({ 
+            message: result.message,
+            user: userToSend,
+            transaction: result.transaction
+        });
+
+    } catch (error: any) {
+        console.error('Apply coupon error:', error);
+        res.status(400).json({ message: error.message || 'Failed to apply coupon' });
+    }
+});
+
+// === Auth Routes ===
 // Login endpoint
 app.post('/api/login', async (req, res) => {
     try {
@@ -93,9 +181,17 @@ app.post('/api/login', async (req, res) => {
         // Login user
         const user = await userService.login(loginDto, ipAddress);
 
-        // Return success response (without sensitive data)
+        // Generate JWT token
+        const token = jwt.sign(
+            { userId: user.id },
+            process.env.JWT_SECRET || 'your-secret-key', // Use secret from env or a default
+            { expiresIn: '1h' } // Set token expiration
+        );
+
+        // Return success response (without sensitive data) including the token
         res.json({
             message: 'Login successful',
+            token: token,
             user: {
                 id: user.id,
                 username: user.username,
@@ -161,6 +257,7 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
+// === User Routes ===
 // Get users
 app.get('/api/users', async (req, res) => {
     try {
