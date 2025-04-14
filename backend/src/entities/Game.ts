@@ -1,6 +1,12 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany } from 'typeorm';
 import { Bet } from './Bet.js';
 
+export enum GameType {
+    ROULETTE = 'roulette',
+    BLACKJACK = 'blackjack',
+    SLOTS = 'slots'
+}
+
 @Entity('games')
 export class Game {
     @PrimaryGeneratedColumn('increment')
@@ -9,8 +15,12 @@ export class Game {
     @Column({ type: 'varchar', length: 100 })
     name!: string;
 
-    @Column({ type: 'varchar', length: 50 })
-    type!: string;
+    @Column({
+        type: 'enum',
+        enum: GameType,
+        default: GameType.ROULETTE
+    })
+    type!: GameType;
 
     @Column({ type: 'jsonb', nullable: true })
     config?: Record<string, any>;

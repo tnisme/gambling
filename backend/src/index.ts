@@ -1,10 +1,10 @@
+import 'reflect-metadata';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import { AppDataSource } from './config/database.js';
-import 'reflect-metadata';
 import { User } from './entities/User.js';
 import { UserService } from './services/UserService.js';
 import { RegisterDto } from './dto/RegisterDto.js';
@@ -16,6 +16,8 @@ import jwt from 'jsonwebtoken';
 import { authMiddleware } from './middleware/authMiddleware.js';
 import { CouponService } from './services/CouponService.js';
 import { Transaction } from './entities/Transaction.js';
+import { GameController } from './controllers/GameController.js';
+import { RouletteServer } from './websocket/rouletteServer.js';
 
 // Load environment variables
 dotenv.config();
@@ -28,10 +30,19 @@ const userService = new UserService();
 let isDatabaseInitialized = false;
 
 AppDataSource.initialize()
-    .then(() => {
+    .then(async () => {
         console.log('📌 Database in use:', AppDataSource.options.database);
         console.log("Data Source has been initialized!");
         isDatabaseInitialized = true;
+
+        // Start WebSocket server
+        const rouletteServer = new RouletteServer(3002);
+        console.log('Roulette WebSocket server started on port 3002');
+
+        // Start HTTP server
+        app.listen(port, () => {
+            console.log(`Server is running on port ${port}`);
+        });
     })
     .catch((err: Error) => {
         console.error("Error during Data Source initialization:", err);
@@ -74,6 +85,11 @@ app.get('/', (req, res) => {
 
 // Register routes
 app.use('/api/deposits', depositRoutes);
+
+// Initialize game controller and register game routes
+const gameController = new GameController();
+app.get('/api/games', (req, res) => gameController.getGames(req, res));
+app.get('/api/games/:id', (req, res) => gameController.getGameById(req, res));
 
 // === Account Routes ===
 // Get transaction history (requires authentication)
@@ -258,7 +274,6 @@ app.post('/api/register', async (req, res) => {
 });
 
 // === User Routes ===
-// Get users
 app.get('/api/users', async (req, res) => {
     try {
         const userRepository = AppDataSource.getRepository(User);
@@ -276,9 +291,4 @@ app.get('/api/users', async (req, res) => {
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
     console.error(err.stack);
     res.status(500).json({ message: 'Something went wrong!' });
-});
-
-// Start server
-app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
 }); 
