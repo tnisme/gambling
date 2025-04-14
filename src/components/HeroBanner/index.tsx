@@ -1,8 +1,15 @@
 import styled, { keyframes } from 'styled-components';
 import { FaCoins, FaDice } from 'react-icons/fa';
 import { GiPokerHand, GiCardRandom } from 'react-icons/gi';
+import { useNavigate } from 'react-router-dom';
 
 const HeroBanner = () => {
+  const navigate = useNavigate();
+
+  const handlePlayNow = () => {
+    navigate('/games');
+  };
+
   return (
     <BannerContainer>
       <BannerOverlay />
@@ -16,7 +23,7 @@ const HeroBanner = () => {
           GET 150% BONUS UP TO $500
           <BonusSpins>+ 100 FREE SPINS!</BonusSpins>
         </WelcomeText>
-        <PlayNowButton>PLAY NOW!</PlayNowButton>
+        <PlayNowButton onClick={handlePlayNow}>PLAY NOW!</PlayNowButton>
       </BannerContent>
 
       <LeftImage src="/casino-chips.png" alt="Casino Chips" />

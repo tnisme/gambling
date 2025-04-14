@@ -23,7 +23,7 @@ const Header = () => {
         </LogoSection>
         
         <Navigation>
-          <NavLink to="#">Games</NavLink>
+          <NavLink to="/games">Games</NavLink>
           <NavLink to="#">Banking</NavLink>
           <NavLink to="#">Support</NavLink>
         </Navigation>

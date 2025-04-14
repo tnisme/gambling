@@ -7,6 +7,7 @@ import { Deposit } from '../entities/Deposit.js';
 import { UserSession } from '../entities/UserSession.js';
 import { Coupon } from '../entities/Coupon.js';
 import { CouponRedemption } from '../entities/CouponRedemption.js';
+import { AddAmericanRouletteGame1713081600000 } from '../migrations/1713081600000-AddAmericanRouletteGame.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -18,7 +19,7 @@ export const AppDataSource = new DataSource({
     username: process.env.DB_USERNAME || "postgres",
     password: process.env.DB_PASSWORD || "postgres",
     database: process.env.DB_NAME || "gamblingDatabase",
-    synchronize: true, // Temporarily enable to recreate schema
+    synchronize: false,
     logging: process.env.NODE_ENV === "development",
     entities: [
         User,
@@ -30,6 +31,8 @@ export const AppDataSource = new DataSource({
         Coupon,
         CouponRedemption
     ],
-    migrations: [],
+    migrations: [
+        AddAmericanRouletteGame1713081600000
+    ],
     subscribers: []
 }); 

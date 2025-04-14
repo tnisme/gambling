@@ -8,10 +8,13 @@
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "test": "jest"
+    "test": "jest",
+    "migration:run": "typeorm-ts-node-commonjs migration:run -d src/config/database.ts",
+    "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/config/database.ts"
   },
   "dependencies": {
     "@types/jsonwebtoken": "^9.0.9",
+    "@types/ws": "^8.18.1",
     "bcrypt": "^5.1.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
@@ -22,7 +25,8 @@
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "pg": "^8.11.3",
-    "typeorm": "^0.3.20"
+    "typeorm": "^0.3.20",
+    "ws": "^8.18.1"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
@@ -34,6 +38,7 @@
     "axios": "^1.8.4",
     "reflect-metadata": "^0.2.1",
     "tsx": "^4.7.1",
+    "typeorm-ts-node-commonjs": "^0.3.20",
     "typescript": "^5.3.3"
   }
 }

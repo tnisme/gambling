@@ -26,6 +26,15 @@ export class Bet {
     @Column({ type: 'int', nullable: true })
     winTransactionId?: number;
 
+    @Column({ type: 'decimal', precision: 15, scale: 2 })
+    amount!: number;
+
+    @Column({ type: 'varchar' })
+    betType!: string;
+
+    @Column({ type: 'varchar' })
+    betValue!: string;
+
     @Column({
         type: 'enum',
         enum: BetOutcome,

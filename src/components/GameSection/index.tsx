@@ -1,34 +1,38 @@
+import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-
-const games = [
-  { id: 1, name: 'Book of Dead', image: '/images/games/book-of-dead.jpg'},
-  { id: 2, name: 'Starburst', image: '/images/games/starburst.jpg'},
-  { id: 3, name: 'Gonzo\'s Quest', image: '/images/games/gonzos-quest.jpg'},
-  { id: 4, name: 'Sweet Bonanza', image: '/images/games/sweet-bonanza.jpg'},
-  { id: 5, name: 'Mega Moolah', image: '/images/games/mega-moolah.jpg'},
-  { id: 6, name: 'Poker', image: '/images/games/poker.jpg'},
-  { id: 7, name: 'Roulette', image: '/images/games/roulette.jpg'},
-  { id: 8, name: 'Blackjack', image: '/images/games/blackjack.jpg'},
-  { id: 9, name: 'Bacarrat', image: '/images/games/bacarrat.jpg'},
-  { id: 10, name: 'Sic Bo', image: '/images/games/sic-bo.jpg'},
-];
+import { useGames } from '../../contexts/GamesContext';
 
 const GameSection = () => {
+  const navigate = useNavigate();
+  const { games, loading, error } = useGames();
+
+  const handlePlayClick = (gameId: number) => {
+    navigate(`/game/${gameId}`);
+  };
+
+  if (loading) {
+    return <LoadingMessage>Loading games...</LoadingMessage>;
+  }
+
+  if (error) {
+    return <ErrorMessage>{error}</ErrorMessage>;
+  }
+
   return (
     <SectionContainer>
       <BackgroundOverlay />
       <SectionContent>
         <SectionHeader>
-      <SectionTitle>Popular Games</SectionTitle>
+          <SectionTitle>Popular Games</SectionTitle>
           <SectionSubtitle>Play the best casino games</SectionSubtitle>
         </SectionHeader>
-      <GamesGrid>
-        {games.map(game => (
-          <GameCard key={game.id}>
+        <GamesGrid>
+          {games.map(game => (
+            <GameCard key={game.id}>
               <GameImageContainer>
-            <GameImage src={game.image} alt={game.name} />
+                <GameImage src={game.image} alt={game.name} />
                 <GameOverlay>
-            <PlayButton>Play Now</PlayButton>
+                  <PlayButton onClick={() => handlePlayClick(game.id)}>Play Now</PlayButton>
                 </GameOverlay>
               </GameImageContainer>
               <GameInfo>
@@ -198,6 +202,20 @@ const GameName = styled.h3`
   font-size: 1.2rem;
   margin-bottom: 0.5rem;
   font-weight: 500;
+`;
+
+const LoadingMessage = styled.div`
+  text-align: center;
+  padding: 2rem;
+  color: ${props => props.theme.colors.white};
+  font-size: 1.2rem;
+`;
+
+const ErrorMessage = styled.div`
+  text-align: center;
+  padding: 2rem;
+  color: ${props => props.theme.colors.primary};
+  font-size: 1.2rem;
 `;
 
 export default GameSection;
