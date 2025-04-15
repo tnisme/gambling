@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { SessionService } from '../services/SessionService.js';
 
 interface JwtPayload {
     userId: number;
@@ -15,7 +16,9 @@ declare global {
     }
 }
 
-export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
+const sessionService = new SessionService();
+
+export const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
 
@@ -23,7 +26,15 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
             return res.status(401).json({ error: 'Authentication required' });
         }
 
+        // Verify JWT token
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as JwtPayload;
+        
+        // Validate session
+        const isValidSession = await sessionService.validateSession(token);
+        if (!isValidSession) {
+            return res.status(401).json({ error: 'Session expired' });
+        }
+
         req.user = { id: decoded.userId };
         next();
     } catch (error) {
