@@ -18,6 +18,7 @@ import { CouponService } from './services/CouponService.js';
 import { Transaction } from './entities/Transaction.js';
 import { GameController } from './controllers/GameController.js';
 import { RouletteServer } from './websocket/rouletteServer.js';
+import { SessionService } from './services/SessionService.js';
 
 // Load environment variables
 dotenv.config();
@@ -200,9 +201,13 @@ app.post('/api/login', async (req, res) => {
         // Generate JWT token
         const token = jwt.sign(
             { userId: user.id },
-            process.env.JWT_SECRET || 'your-secret-key', // Use secret from env or a default
-            { expiresIn: '1h' } // Set token expiration
+            process.env.JWT_SECRET || 'your-secret-key',
+            { expiresIn: '1h' }
         );
+
+        // Create session
+        const sessionService = new SessionService();
+        await sessionService.createSession(user, token);
 
         // Return success response (without sensitive data) including the token
         res.json({
@@ -285,6 +290,15 @@ app.get('/api/users', async (req, res) => {
         console.error('Error fetching users:', error);
         res.status(500).json({ message: 'Error fetching users' });
     }
+});
+
+// Session check endpoint
+app.get('/api/check-session', authMiddleware, async (req, res) => {
+  try {
+    res.json({ message: 'Session is valid' });
+  } catch (error) {
+    res.status(401).json({ error: 'Session expired' });
+  }
 });
 
 // Error handling middleware

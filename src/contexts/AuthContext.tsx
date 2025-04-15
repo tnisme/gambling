@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
-import { getCurrentUser, logout } from '../services/authService';
+import { getCurrentUser, logout, checkSession } from '../services/authService';
 
 export interface User {
   id: string;
@@ -39,6 +39,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setIsAuthenticated(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      const checkSessionInterval = setInterval(async () => {
+        const isValid = await checkSession();
+        if (!isValid) {
+          setUser(null);
+          setIsAuthenticated(false);
+        }
+      }, 60000);
+
+      return () => clearInterval(checkSessionInterval);
+    }
+  }, [isAuthenticated]);
 
   const handleSetUser = (user: User) => {
     console.log('Setting new user:', user.username);

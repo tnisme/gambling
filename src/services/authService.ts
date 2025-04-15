@@ -29,9 +29,7 @@ api.interceptors.response.use(
   (error: any) => {
     if (error.response?.status === 401) {
       // Token expired or invalid
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      handleLogout();
     }
     return Promise.reject(error);
   }
@@ -166,4 +164,24 @@ export const getCurrentUser = (): User | null => {
   
   console.log('No valid user data found');
   return null;
+};
+
+export const checkSession = async (): Promise<boolean> => {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) return false;
+
+    // Make a request to check session validity
+    await api.get('/api/check-session');
+    return true;
+  } catch (error) {
+    handleLogout();
+    return false;
+  }
+};
+
+const handleLogout = (): void => {
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  window.location.href = '/login';
 }; 
