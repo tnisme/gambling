@@ -8,6 +8,7 @@ import { UserSession } from '../entities/UserSession.js';
 import { Coupon } from '../entities/Coupon.js';
 import { CouponRedemption } from '../entities/CouponRedemption.js';
 import { AddAmericanRouletteGame1713081600000 } from '../migrations/1713081600000-AddAmericanRouletteGame.js';
+import { AddBlackjackGame1713081600001 } from '../migrations/1713081600001-AddBlackjackGame.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -32,7 +33,8 @@ export const AppDataSource = new DataSource({
         CouponRedemption
     ],
     migrations: [
-        AddAmericanRouletteGame1713081600000
+        AddAmericanRouletteGame1713081600000,
+        AddBlackjackGame1713081600001
     ],
     subscribers: []
 }); 

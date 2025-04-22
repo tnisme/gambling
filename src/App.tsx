@@ -4,6 +4,7 @@ import { GlobalStyles } from './styles/GlobalStyles';
 import { theme } from './styles/theme';
 import { AuthProvider } from './contexts/AuthContext';
 import { GamesProvider } from './contexts/GamesContext';
+import { AudioProvider } from './contexts/AudioContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
@@ -18,8 +19,9 @@ function App() {
     <ThemeProvider theme={theme}>
       <GlobalStyles />
       <Router>
-        <AuthProvider>
-          <GamesProvider>
+        <AudioProvider>
+          <AuthProvider>
+            <GamesProvider>
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/login" element={<LoginPage />} />
@@ -36,8 +38,9 @@ function App() {
                 } 
               />
             </Routes>
-          </GamesProvider>
-        </AuthProvider>
+            </GamesProvider>
+          </AuthProvider>
+        </AudioProvider>
       </Router>
     </ThemeProvider>
   );

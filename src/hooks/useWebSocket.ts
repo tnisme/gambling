@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from "react";
 
 export const useWebSocket = (url: string) => {
   const [isConnected, setIsConnected] = useState(false);
@@ -26,4 +26,4 @@ export const useWebSocket = (url: string) => {
   }, [url]);
 
   return wsRef.current;
-}; 
+};

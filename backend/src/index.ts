@@ -19,6 +19,7 @@ import { Transaction } from './entities/Transaction.js';
 import { GameController } from './controllers/GameController.js';
 import { RouletteServer } from './websocket/rouletteServer.js';
 import { SessionService } from './services/SessionService.js';
+import { BlackjackServer } from './websocket/blackjackServer.js';
 
 // Load environment variables
 dotenv.config();
@@ -36,9 +37,12 @@ AppDataSource.initialize()
         console.log("Data Source has been initialized!");
         isDatabaseInitialized = true;
 
-        // Start WebSocket server
+        // Start WebSocket servers
         const rouletteServer = new RouletteServer(3002);
         console.log('Roulette WebSocket server started on port 3002');
+
+        const blackjackServer = new BlackjackServer(3003);
+        console.log('Blackjack WebSocket server started on port 3003');
 
         // Start HTTP server
         app.listen(port, () => {

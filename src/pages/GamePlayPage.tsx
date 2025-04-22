@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import styled from 'styled-components';
-import Header from '../components/Header';
-import { gameService, Game } from '../services/gameService';
-import Roulette from '../components/games/Roulette';
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import styled from "styled-components";
+import { MdArrowBack } from "react-icons/md";
+import Header from "../components/Header";
+import { gameService, Game } from "../services/gameService";
+import Roulette from "../components/games/Roulette";
+import Blackjack from "../components/games/Blackjack";
 
 const GameContainer = styled.div`
   display: flex;
@@ -15,49 +17,51 @@ const GameContainer = styled.div`
 
 const GameContent = styled.div`
   flex: 1;
-  padding: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
   width: 100%;
-`;
-
-const GameHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-`;
-
-const GameTitle = styled.h1`
-  font-size: 2rem;
-  color: #ffffff;
-  margin: 0;
+  height: calc(100vh - 60px); // Adjust for header height
+  position: relative;
+  overflow: hidden;
 `;
 
 const BackButton = styled.button`
-  background-color: #2d2d2d;
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background-color: rgba(45, 45, 45, 0.8);
   color: #ffffff;
   border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
   cursor: pointer;
-  font-size: 1rem;
-  transition: background-color 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  z-index: 100;
+  padding: 0;
 
   &:hover {
-    background-color: #3d3d3d;
+    background-color: rgba(61, 61, 61, 0.9);
+    transform: scale(1.1);
+  }
+
+  svg {
+    width: 24px;
+    height: 24px;
+    fill: currentColor;
   }
 `;
 
 const GameFrame = styled.div`
   width: 100%;
-  height: 600px;
+  height: 100%;
   background-color: #2d2d2d;
-  border-radius: 8px;
   display: flex;
-  align-items: center;
+  align-items: flex-start; // Changed from center to allow scrolling
   justify-content: center;
   position: relative;
+  overflow: hidden;
 `;
 
 const LoadingText = styled.div`
@@ -79,8 +83,8 @@ const GamePlayPage = () => {
         const gameData = await gameService.getGameById(parseInt(gameId));
         setGame(gameData);
       } catch (err) {
-        setError('Failed to load game');
-        console.error('Error fetching game:', err);
+        setError("Failed to load game");
+        console.error("Error fetching game:", err);
       } finally {
         setLoading(false);
       }
@@ -108,7 +112,7 @@ const GamePlayPage = () => {
         <Header />
         <GameContainer>
           <GameContent>
-            <LoadingText>{error || 'Game not found'}</LoadingText>
+            <LoadingText>{error || "Game not found"}</LoadingText>
           </GameContent>
         </GameContainer>
       </>
@@ -120,13 +124,17 @@ const GamePlayPage = () => {
       <Header />
       <GameContainer>
         <GameContent>
-          <GameHeader>
-            <GameTitle>{game.name}</GameTitle>
-            <BackButton onClick={() => navigate('/games')}>Back to Games</BackButton>
-          </GameHeader>
+          <BackButton
+            onClick={() => navigate("/games")}
+            aria-label="Back to games"
+          >
+            <MdArrowBack size={24} />
+          </BackButton>
           <GameFrame>
-            {game.type === 'roulette' ? (
+            {game.type === "roulette" ? (
               <Roulette />
+            ) : game.type === "blackjack" ? (
+              <Blackjack />
             ) : (
               <LoadingText>Game type not supported: {game.type}</LoadingText>
             )}
@@ -137,4 +145,4 @@ const GamePlayPage = () => {
   );
 };
 
-export default GamePlayPage; 
+export default GamePlayPage;

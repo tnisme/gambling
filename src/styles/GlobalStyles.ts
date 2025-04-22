@@ -5,6 +5,8 @@ export const GlobalStyles = createGlobalStyle`
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    transform-style: preserve-3d;
+    backface-visibility: hidden;
   }
 
   html, body {
@@ -43,5 +45,26 @@ export const GlobalStyles = createGlobalStyle`
   img {
     max-width: 100%;
     height: auto;
+  }
+
+  .wheel {
+    transform-origin: center center;
+    will-change: transform;
+  }
+
+  .ball {
+    transform-origin: center center;
+    will-change: transform;
+  }
+
+  @keyframes bounce {
+    0%, 100% { transform: translateY(-163.221px); }
+    50% { transform: translateY(-100px); }
+  }
+
+  @media (max-width: 1024px) {
+    .roulette-wheel {
+      margin-bottom: 2rem;
+    }
   }
 `;

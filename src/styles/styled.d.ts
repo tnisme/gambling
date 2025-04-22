@@ -10,6 +10,9 @@ declare module 'styled-components' {
       white: string;
       lightGray: string;
       overlay: string;
+      border: string;
+      primaryDark: string;
+      backgroundAlt: string;
     };
     fonts: {
       primary: string;

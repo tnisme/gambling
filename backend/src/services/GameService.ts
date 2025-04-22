@@ -11,21 +11,34 @@ export class GameService {
         return this.gameRepository.findOne({ where: { type } });
     }
 
+    async getGameById(id: number): Promise<Game | null> {
+        return this.gameRepository.findOne({ where: { id } });
+    }
+
     async getRouletteGame(): Promise<Game | null> {
         return this.getGameByType(GameType.ROULETTE);
+    }
+
+    async getBlackjackGame(): Promise<Game | null> {
+        return this.getGameByType(GameType.BLACKJACK);
     }
 
     async createGame(name: string, type: GameType, minBet: number, maxBet: number): Promise<Game> {
         const game = new Game();
         game.name = name;
         game.type = type;
-        game.minBet = minBet;
-        game.maxBet = maxBet;
-        game.isActive = true;
+        game.config = { minBet, maxBet };
         return this.gameRepository.save(game);
     }
 
-    async placeBet(betData: { userId: number; gameId: number; amount: number; betType: string; betValue: string }): Promise<Bet> {
+    async placeBet(betData: { 
+        userId: number; 
+        gameId: number; 
+        amount: number; 
+        betType: string; 
+        betValue: string;
+        transactionId?: number;
+    }): Promise<Bet> {
         const bet = new Bet();
         bet.userId = betData.userId;
         bet.gameId = betData.gameId;
@@ -33,6 +46,11 @@ export class GameService {
         bet.betType = betData.betType;
         bet.betValue = betData.betValue;
         bet.outcome = BetOutcome.PENDING;
+        
+        if (betData.transactionId) {
+            bet.transactionId = betData.transactionId;
+        }
+        
         return this.betRepository.save(bet);
     }
 } 

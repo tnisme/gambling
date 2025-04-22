@@ -53,18 +53,18 @@ export class Bet {
 
     // Relations
     @ManyToOne(() => User, user => user.bets)
-    @JoinColumn({ name: 'userId' })
+    @JoinColumn({ name: 'user_id' })
     user!: User;
 
     @ManyToOne(() => Game, game => game.bets)
-    @JoinColumn({ name: 'gameId' })
+    @JoinColumn({ name: 'game_id' })
     game!: Game;
 
     @ManyToOne(() => Transaction, transaction => transaction.bets)
-    @JoinColumn({ name: 'transactionId' })
+    @JoinColumn({ name: 'transaction_id' })
     transaction!: Transaction;
 
     @ManyToOne(() => Transaction, transaction => transaction.winBets)
-    @JoinColumn({ name: 'winTransactionId' })
+    @JoinColumn({ name: 'win_transaction_id' })
     winTransaction?: Transaction;
 } 
