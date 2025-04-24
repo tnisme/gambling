@@ -2,11 +2,13 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import { useWebSocket } from "../../hooks/useWebSocket";
 import { BetOption, GameState } from "../../types/roulette";
+import { animate, utils } from "animejs";
+
 interface PlacedBet extends BetOption {
   position: { x: number; y: number };
   amount: number;
+  area: string; // Added to track bet area
 }
-import { animate, utils } from "animejs";
 
 const redNumbers = [
   1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36,
@@ -21,6 +23,63 @@ const betTableNumber = [
   [2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35],
   [1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34],
 ];
+
+type BetAreaKey =
+  | "zero"
+  | "dozen-1"
+  | "dozen-2"
+  | "dozen-3"
+  | "1-18"
+  | "even"
+  | "red"
+  | "black"
+  | "odd"
+  | "19-36"
+  | "column-1"
+  | "column-2"
+  | "column-3"
+  | `number-${number}`;
+
+type BetAreaPosition = {
+  x: number;
+  y: number;
+};
+
+// Define betting areas with their center positions
+const betAreas: Record<BetAreaKey, BetAreaPosition> = {
+  // Zero
+  zero: { x: 3.5, y: 50 },
+
+  // Inside numbers (created dynamically in the code)
+
+  // Dozens
+  "dozen-1": { x: 20, y: 14 },
+  "dozen-2": { x: 48, y: 14 },
+  "dozen-3": { x: 76, y: 14 },
+
+  // Outside bets
+  "1-18": { x: 13.5, y: 85 },
+  even: { x: 27, y: 85 },
+  red: { x: 41, y: 85 },
+  black: { x: 55, y: 85 },
+  odd: { x: 69, y: 85 },
+  "19-36": { x: 83, y: 85 },
+
+  // Columns
+  "column-1": { x: 94, y: 34 },
+  "column-2": { x: 94, y: 50 },
+  "column-3": { x: 94, y: 66 },
+};
+
+// Initialize individual number positions
+for (let row = 0; row < 3; row++) {
+  for (let col = 0; col < 12; col++) {
+    const number = betTableNumber[row][col];
+    const x = 7 + (col + 0.5) * ((90 - 7) / 12);
+    const y = 23 + (row + 0.5) * ((76 - 23) / 3);
+    betAreas[`number-${number}`] = { x, y };
+  }
+}
 
 const HistoryContainer = styled.div`
   display: flex;
@@ -162,6 +221,7 @@ const BetMarker = styled.div<{ x: number; y: number }>`
   top: ${(props) => props.y}%;
   display: flex;
   align-items: center;
+  pointer-events: none; // Prevent the marker from blocking clicks
   justify-content: center;
   z-index: 2;
 
@@ -321,13 +381,96 @@ const ActionButtonsContainer = styled.div`
   justify-content: center;
 `;
 
+// Thêm styled component cho popup
+const WinningPopupOverlay = styled.div<{ show: boolean }>`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: ${({ show }) => (show ? "flex" : "none")};
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: ${({ show }) => (show ? "fadeIn 0.5s ease" : "none")};
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+`;
+
+const WinningPopupContent = styled.div`
+  position: relative;
+  max-width: 80%;
+  max-height: 80%;
+  animation: scaleIn 0.3s ease;
+
+  @keyframes scaleIn {
+    from {
+      transform: scale(0.5);
+    }
+    to {
+      transform: scale(1);
+    }
+  }
+
+  img {
+    max-width: 100%;
+    max-height: 100%;
+  }
+`;
+
+const WinningAmount = styled.div`
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #ffd700;
+  font-size: 2.5rem;
+  font-weight: bold;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.5);
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  border: 2px solid #efd49b;
+`;
+
+const CloseButton = styled.button`
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #8d291e;
+  color: #efd49b;
+  border: 2px solid #efd49b;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: #b8371e;
+    transform: scale(1.1);
+  }
+`;
+
 const wheelNumbers = [
   0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24,
   16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26,
 ];
 
 const Roulette: React.FC = () => {
-  const [selectedBet, setSelectedBet] = useState<BetOption | null>(null);
   const [betAmount, setBetAmount] = useState<number>(0);
   const [gameState, setGameState] = useState<GameState>({
     status: "waiting",
@@ -344,10 +487,15 @@ const Roulette: React.FC = () => {
   const ballContainerRef = useRef<HTMLDivElement>(null);
   const ballRef = useRef<HTMLDivElement>(null);
 
+  // Thêm state cho winning popup
+  const [showWinningPopup, setShowWinningPopup] = useState<boolean>(false);
+  const [winningAmount, setWinningAmount] = useState<number>(0);
+
   const totalNumbers = 37;
   const singleSpinDuration = 5000;
   const singleRotationDegree = 360 / totalNumbers;
   const [lastNumber, setLastNumber] = useState<number>(0);
+
   const nextNumber = (number: number) => {
     setGameState((prev) => ({
       ...prev,
@@ -355,11 +503,51 @@ const Roulette: React.FC = () => {
       timeRemaining: 30, // Reset timer when new number is drawn
       status: "waiting",
     }));
-    setTimeout(
-      () => setNumberHistory((prev) => [number, ...prev].slice(0, 10)),
-      5000
-    );
+
+    // Check for winning bets and calculate winnings after spin
+    setTimeout(() => {
+      checkWinningBets(number);
+      setNumberHistory((prev) => [number, ...prev].slice(0, 10));
+    }, 5000);
+
     return number;
+  };
+
+  // Add function to check winning bets
+  const checkWinningBets = (landedNumber: number) => {
+    console.log("Checking winning bets for number:", landedNumber);
+    console.log("Current placed bets:", placedBets);
+
+    if (placedBets.length === 0) {
+      console.log("No bets placed, returning");
+      return;
+    }
+
+    let totalWinnings = 0;
+
+    // Check each bet to see if it's a winner
+    placedBets.forEach((bet) => {
+      console.log("Checking bet:", bet);
+      console.log("Bet numbers:", bet.numbers);
+      const isWinner = bet.numbers.includes(landedNumber);
+      console.log("Is winner:", isWinner);
+
+      if (isWinner) {
+        // Calculate winnings: bet amount + (bet amount * payout)
+        const winAmount = bet.amount + bet.amount * bet.payout;
+        totalWinnings += winAmount;
+        console.log("Win amount:", winAmount);
+      }
+    });
+
+    console.log("Total winnings:", totalWinnings);
+
+    // Show winning popup if there are any winnings
+    if (totalWinnings > 0) {
+      console.log("Showing winning popup");
+      setWinningAmount(totalWinnings);
+      setShowWinningPopup(true);
+    }
   };
 
   const complete = useCallback((): void => {
@@ -520,22 +708,6 @@ const Roulette: React.FC = () => {
     }
   }, [gameState.timeRemaining, gameState.status, handleSpin]);
 
-  useEffect(() => {
-    if (selectedBet && betAmount > 0 && gameState.status === "waiting") {
-      const newBet: PlacedBet = {
-        ...selectedBet,
-        position: {
-          x: 0,
-          y: 0,
-        },
-        amount: betAmount,
-      };
-      setPlacedBets((prevBets) => [...prevBets, newBet]);
-      setSelectedBet(null);
-      setBetAmount(0);
-    }
-  }, [selectedBet, betAmount, gameState, socket]);
-
   const isRedNumber = (number: number): boolean => {
     return redNumbers.includes(number);
   };
@@ -551,6 +723,7 @@ const Roulette: React.FC = () => {
       console.log("Bet clicked at:", { x, y });
 
       let bet: BetOption | null = null;
+      let betArea: string | null = null;
 
       // Zero bet
       if (x < 7 && y > 35 && y < 84) {
@@ -559,6 +732,7 @@ const Roulette: React.FC = () => {
           numbers: [0],
           payout: 35,
         };
+        betArea = "zero";
       }
 
       // Inside number bets
@@ -569,11 +743,20 @@ const Roulette: React.FC = () => {
         const rowHeight = (76 - 23) / 3;
         const rowIndex = Math.floor((y - 23) / rowHeight);
 
-        bet = {
-          type: "straight",
-          numbers: [betTableNumber[rowIndex][columnIndex]],
-          payout: 35,
-        };
+        if (
+          rowIndex >= 0 &&
+          rowIndex < 3 &&
+          columnIndex >= 0 &&
+          columnIndex < 12
+        ) {
+          const number = betTableNumber[rowIndex][columnIndex];
+          bet = {
+            type: "straight",
+            numbers: [number],
+            payout: 35,
+          };
+          betArea = `number-${number}`;
+        }
       }
 
       // Outside bets
@@ -583,58 +766,67 @@ const Roulette: React.FC = () => {
             bet = {
               type: "dozen",
               numbers: Array.from({ length: 12 }, (_, i) => i + 1),
-              payout: 1,
+              payout: 2,
             };
+            betArea = "dozen-1";
           } else if (x < 62 && x > 34) {
             bet = {
               type: "dozen",
               numbers: Array.from({ length: 12 }, (_, i) => i + 13),
-              payout: 1,
+              payout: 2,
             };
+            betArea = "dozen-2";
           } else if (x > 62 && x < 90) {
             bet = {
               type: "dozen",
               numbers: Array.from({ length: 12 }, (_, i) => i + 25),
-              payout: 1,
+              payout: 2,
             };
+            betArea = "dozen-3";
           }
-        } else if (y > 67 && y < 93) {
+        } else if (y > 76 && y < 93) {
           if (x < 20 && x > 7) {
             bet = {
               type: "1-18",
               numbers: Array.from({ length: 18 }, (_, i) => i + 1),
               payout: 1,
             };
+            betArea = "1-18";
           } else if (x < 34 && x > 20) {
             bet = {
               type: "even",
-              numbers: Array.from({ length: 18 }, (_, i) => i * 2 + 19),
+              numbers: Array.from({ length: 18 }, (_, i) => (i + 1) * 2),
               payout: 1,
             };
+            betArea = "even";
           } else if (x < 48 && x > 34) {
             bet = {
               type: "red",
               numbers: redNumbers,
               payout: 1,
             };
+            betArea = "red";
           } else if (x > 48 && x < 62) {
             bet = {
               type: "black",
               numbers: blackNumbers,
               payout: 1,
             };
+            betArea = "black";
           } else if (x > 62 && x < 76) {
             bet = {
               type: "odd",
               numbers: Array.from({ length: 18 }, (_, i) => i * 2 + 1),
               payout: 1,
             };
+            betArea = "odd";
           } else if (x > 76 && x < 90) {
             bet = {
               type: "19-36",
               numbers: Array.from({ length: 18 }, (_, i) => i + 19),
               payout: 1,
             };
+            betArea = "19-36";
           }
         }
       }
@@ -649,24 +841,49 @@ const Roulette: React.FC = () => {
             numbers: betTableNumber[rowIndex],
             payout: 2,
           };
+          betArea = `column-${rowIndex + 1}`;
         }
       }
 
-      if (bet) {
-        const newBet: PlacedBet = {
-          ...bet,
-          position: { x, y },
-          amount: betAmount,
-        };
-        console.log("New bet placed:", {
-          type: bet.type,
-          numbers: bet.numbers,
-          payout: bet.payout,
-          amount: betAmount,
-          position: { x, y },
-          timestamp: new Date().toISOString(),
-        });
-        setPlacedBets((prevBets) => [...prevBets, newBet]);
+      if (bet && betArea) {
+        // Check if we already have a bet in this area
+        const existingBetIndex = placedBets.findIndex(
+          (b) => b.area === betArea
+        );
+
+        if (existingBetIndex !== -1) {
+          // Update existing bet amount
+          const updatedBets = [...placedBets];
+          updatedBets[existingBetIndex].amount += betAmount;
+          setPlacedBets(updatedBets);
+        } else {
+          // Create new bet with centered position
+          const position = betAreas[betArea as BetAreaKey] || { x, y };
+          const newBet: PlacedBet = {
+            ...bet,
+            position: position,
+            amount: betAmount,
+            area: betArea,
+          };
+          console.log("New bet placed:", {
+            type: bet.type,
+            numbers: bet.numbers,
+            payout: bet.payout,
+            betAmount: betAmount,
+            position: position,
+            area: betArea,
+          });
+          console.log("New bet placed:", {
+            type: bet.type,
+            numbers: bet.numbers,
+            payout: bet.payout,
+            betAmount: betAmount,
+            position,
+            area: betArea,
+            timestamp: new Date().toISOString(),
+          });
+          setPlacedBets((prevBets) => [...prevBets, newBet]);
+        }
       }
     };
 
@@ -744,8 +961,30 @@ const Roulette: React.FC = () => {
     );
   };
 
+  // Component cho popup winning
+  const renderWinningPopup = () => {
+    return (
+      <WinningPopupOverlay show={showWinningPopup}>
+        <WinningPopupContent>
+          <img
+            src="/images/roulette/winning.png"
+            alt="You Win!"
+            style={{ width: "500px" }}
+          />
+          <WinningAmount>+{winningAmount} chips</WinningAmount>
+          <CloseButton onClick={() => setShowWinningPopup(false)}>
+            ×
+          </CloseButton>
+        </WinningPopupContent>
+      </WinningPopupOverlay>
+    );
+  };
+
   return (
     <RouletteContainer>
+      {/* Render winning popup */}
+      {renderWinningPopup()}
+
       <GameLayout>
         <WheelSection>
           <RouletteWheel>
