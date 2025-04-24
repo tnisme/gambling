@@ -486,6 +486,7 @@ const Roulette: React.FC = () => {
   const layer4Ref = useRef<HTMLDivElement>(null);
   const ballContainerRef = useRef<HTMLDivElement>(null);
   const ballRef = useRef<HTMLDivElement>(null);
+  const placedBetsRef = useRef(placedBets);
 
   // Thêm state cho winning popup
   const [showWinningPopup, setShowWinningPopup] = useState<boolean>(false);
@@ -497,28 +498,31 @@ const Roulette: React.FC = () => {
   const [lastNumber, setLastNumber] = useState<number>(0);
 
   const nextNumber = (number: number) => {
-    setGameState((prev) => ({
-      ...prev,
-      lastNumber: number,
-      timeRemaining: 30, // Reset timer when new number is drawn
-      status: "waiting",
-    }));
-
-    // Check for winning bets and calculate winnings after spin
     setTimeout(() => {
       checkWinningBets(number);
+      setGameState((prev) => ({
+        ...prev,
+        lastNumber: number,
+        timeRemaining: 30, // Reset timer when new number is drawn
+        status: "waiting",
+      }));
       setNumberHistory((prev) => [number, ...prev].slice(0, 10));
     }, 5000);
 
     return number;
   };
 
+  useEffect(() => {
+    placedBetsRef.current = placedBets;
+  }, [placedBets]);
+
   // Add function to check winning bets
   const checkWinningBets = (landedNumber: number) => {
+    const currentBet = placedBetsRef.current;
     console.log("Checking winning bets for number:", landedNumber);
-    console.log("Current placed bets:", placedBets);
+    console.log("Current placed bets:", currentBet);
 
-    if (placedBets.length === 0) {
+    if (currentBet.length === 0) {
       console.log("No bets placed, returning");
       return;
     }
@@ -526,7 +530,7 @@ const Roulette: React.FC = () => {
     let totalWinnings = 0;
 
     // Check each bet to see if it's a winner
-    placedBets.forEach((bet) => {
+    currentBet.forEach((bet) => {
       console.log("Checking bet:", bet);
       console.log("Bet numbers:", bet.numbers);
       const isWinner = bet.numbers.includes(landedNumber);
@@ -551,11 +555,14 @@ const Roulette: React.FC = () => {
   };
 
   const complete = useCallback((): void => {
-    setGameState((prev) => ({
-      status: "waiting",
-      lastNumber: prev.lastNumber || 0,
-      timeRemaining: 30,
-    }));
+    setTimeout(() => {
+      setGameState((prev) => ({
+        status: "waiting",
+        lastNumber: prev.lastNumber || 0,
+        timeRemaining: 30,
+      }));
+      setPlacedBets([]);
+    }, 5000);
   }, []);
 
   const getRotationFromNumber = (number: string) => {
@@ -714,13 +721,17 @@ const Roulette: React.FC = () => {
 
   const renderBettingTable = () => {
     const handleBetClick = (event: React.MouseEvent<HTMLDivElement>) => {
-      if (gameState?.status !== "waiting" || !betAmount) return;
+      if (gameState?.status !== "waiting" || !betAmount) {
+        console.log("Click ignored - game not waiting or no bet amount", {
+          status: gameState?.status,
+          betAmount,
+        });
+        return;
+      }
 
       const rect = event.currentTarget.getBoundingClientRect();
       const x = ((event.clientX - rect.left) / rect.width) * 100;
       const y = ((event.clientY - rect.top) / rect.height) * 100;
-
-      console.log("Bet clicked at:", { x, y });
 
       let bet: BetOption | null = null;
       let betArea: string | null = null;
@@ -873,21 +884,12 @@ const Roulette: React.FC = () => {
             position: position,
             area: betArea,
           });
-          console.log("New bet placed:", {
-            type: bet.type,
-            numbers: bet.numbers,
-            payout: bet.payout,
-            betAmount: betAmount,
-            position,
-            area: betArea,
-            timestamp: new Date().toISOString(),
-          });
           setPlacedBets((prevBets) => [...prevBets, newBet]);
         }
       }
     };
 
-    const chipValues = [1, 2, 5, 10, 50, 100];
+    const chipValues = [1, 2, 5, 10, 20, 50, 100];
 
     return (
       <>
